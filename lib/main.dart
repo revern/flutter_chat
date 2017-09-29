@@ -11,6 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:math';
 import 'dart:io';
+import 'cloud.dart';
 
 final googleSignIn = new GoogleSignIn();
 final analytics = new FirebaseAnalytics();
@@ -32,8 +33,6 @@ final ThemeData kDefaultTheme = new ThemeData(
   accentColor: Colors.orangeAccent[400],
 );
 
-const String _name = "Your Name";
-
 class FlutterChatApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -47,51 +46,6 @@ class FlutterChatApp extends StatelessWidget {
   }
 }
 
-class ChatMessage extends StatelessWidget {
-  ChatMessage({this.snapshot, this.animation});
-
-  final DataSnapshot snapshot;
-  final Animation animation;
-
-  @override
-  Widget build(BuildContext context) {
-    return new SizeTransition(
-        sizeFactor:
-            new CurvedAnimation(parent: animation, curve: Curves.easeOut),
-        axisAlignment: 0.0,
-        child: new Container(
-          margin: const EdgeInsets.symmetric(vertical: 10.0),
-          child: new Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              new Container(
-                margin: const EdgeInsets.only(right: 16.0),
-                child: new CircleAvatar(
-                    backgroundImage:
-                        new NetworkImage(snapshot.value['senderPhotoUrl'])),
-              ),
-              new Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  new Text(snapshot.value['senderName'],
-                      style: Theme.of(context).textTheme.subhead),
-                  new Container(
-                    margin: const EdgeInsets.only(top: 5.0),
-                    child: snapshot.value['imageUrl'] != null
-                        ? new Image.network(
-                            snapshot.value['imageUrl'],
-                            width: 250.0,
-                          )
-                        : new Text(snapshot.value['text']),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ));
-  }
-}
-
 class ChatScreen extends StatefulWidget {
   @override
   State createState() => new ChatScreenState();
@@ -100,6 +54,7 @@ class ChatScreen extends StatefulWidget {
 class ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = new TextEditingController();
   bool _isComposing = false;
+  String _cloudTitle = "Cloud";
 
   Future<Null> _ensureLoggedIn() async {
     GoogleSignInAccount user = googleSignIn.currentUser;
@@ -190,9 +145,20 @@ class ChatScreenState extends State<ChatScreen> {
     return new Scaffold(
       appBar: new AppBar(
           title: new Container(
-            padding: new EdgeInsets.symmetric(horizontal: 16.0),
-            child: new Text("Flutter Chat"),
-          ),
+              padding: new EdgeInsets.symmetric(horizontal: 16.0),
+              child: new Row(
+                children: <Widget>[
+                  new Text('Flutter Chat'),
+                  new IconButton(
+                      icon: new Icon(Icons.cloud),
+                      onPressed: () async {
+                        _cloudTitle = await Navigator.push(
+                            context, new CloudRoute(title: _cloudTitle));
+                        _cloudTitle =
+                            _cloudTitle == null ? "Null" : _cloudTitle;
+                      }),
+                ],
+              )),
           elevation:
               Theme.of(context).platform == TargetPlatform.iOS ? 0.0 : 4.0),
       body: new Container(
@@ -224,5 +190,50 @@ class ChatScreenState extends State<ChatScreen> {
                       new Border(top: new BorderSide(color: Colors.grey[200])))
               : null),
     );
+  }
+}
+
+class ChatMessage extends StatelessWidget {
+  ChatMessage({this.snapshot, this.animation});
+
+  final DataSnapshot snapshot;
+  final Animation animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return new SizeTransition(
+        sizeFactor:
+            new CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        axisAlignment: 0.0,
+        child: new Container(
+          margin: const EdgeInsets.symmetric(vertical: 10.0),
+          child: new Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              new Container(
+                margin: const EdgeInsets.only(right: 16.0),
+                child: new CircleAvatar(
+                    backgroundImage:
+                        new NetworkImage(snapshot.value['senderPhotoUrl'])),
+              ),
+              new Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  new Text(snapshot.value['senderName'],
+                      style: Theme.of(context).textTheme.subhead),
+                  new Container(
+                    margin: const EdgeInsets.only(top: 5.0),
+                    child: snapshot.value['imageUrl'] != null
+                        ? new Image.network(
+                            snapshot.value['imageUrl'],
+                            width: 250.0,
+                          )
+                        : new Text(snapshot.value['text']),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ));
   }
 }
